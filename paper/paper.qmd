@@ -1,10 +1,8 @@
 ---
 title: "My title"
 subtitle: "My subtitle if needed"
-author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: LINK."
+author: Yingxuan Sun
+thanks: "https://github.com/lindasun03/video_game_analysis."
 date: today
 date-format: long
 abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
@@ -19,93 +17,49 @@ bibliography: references.bib
 #| message: false
 
 library(tidyverse)
-library(palmerpenguins)
-```
+library(rstanarm)
+library(arrow)
 
+#### Read data ####  
+analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
+```
 
 # Introduction
 
-You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
+In today's digital age, video games have become an integral part of the global entertainment industry, with an ever-expanding market and an increasingly diverse user base involved. From home consoles to mobile platforms, different types of video games are capturing the attention of hundreds of millions of gamers worldwide. Therefore, an in-depth analysis of video game sales is particularly important, not only to reveal market trends, but also to help developers and publishers better understand consumer needs and preferences.
 
-The remainder of this paper is structured as follows. @sec-data....
+In this paper, we will explore the sales performance of video games based on market data up to 2020 and analyze how various factors affect this performance. By taking into account game genres, release platforms, regional sales, and the year in which the game was released, we aim to build a comprehensive view of the market in order to identify the industry's success factors and potential growth opportunities.
 
-
+By analyzing video game sales in detail, this paper hopes to provide valuable insights and information to game developers, market analysts, and readers interested in this industry, further contributing to the understanding and exploration of video game market dynamics.
 
 # Data {#sec-data}
 
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
-
-```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
-
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
-
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
-
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
-#| echo: false
-#| warning: false
-#| message: false
-
-analysis_data <- read_csv(here::here("data/analysis_data/analysis_data.csv"))
-
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
-```
-
-Talk way more about it. 
-
-
+The data for this analysis was sourced from "Video Games Sales Dataset" [@videogamesales] on Kaggle platform. This dataset compiles extensive details on video game sales across various platforms and regions, capturing key metrics such as global sales, regional sales (North America, Europe, Japan, and other regions), as well as user and critic scores from Metacritic. It also includes information on publishers, platforms, and the genre of each game, spanning from the early 1980s to 2020. Additionally, the dataset offers insights into the release year of games, providing a comprehensive view of the evolution and trends in the video game industry over decades. This dataset is maintained by Kaggle user sidtwr and is updated periodically, ensuring its relevance and utility for both historical analysis and current market assessments. Due to its broad coverage and the granularity of sales and rating data, this dataset is considered highly credible and serves as the primary data source for our analysis of trends and patterns in video game sales and preferences. However, it should be noted that the analysis may be limited by the completeness and accuracy of user and critic scores, as these are aggregated from external sources and may vary in availability per game.
 
 # Model
 
-The goal of our modelling strategy is twofold. Firstly,...
-
-Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
+The goal of our modelling strategy is twofold. Firstly, we aim to analyze the historical sales data of video games to identify trends over time. Secondly, we endeavor to forecast future global sales based on these trends, assisting stakeholders in making informed decisions regarding market strategies. Here we briefly describe the Bayesian analysis model used to investigate these objectives.
 
 ## Model set-up
 
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
+Define $y_i$ as the global sales of video games in millions of dollars for year $i$. Let $x_i$ represent the number of years since 1980, when our data collection begins.
 
+```{=tex}
 \begin{align} 
 y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
+\mu_i &= \beta_0 + \beta_1 \times x_i\\
+\beta_0 &\sim \mbox{Normal}(50, 20) \\
+\beta_1 &\sim \mbox{Normal}(-0.3, 0.1) \\
 \sigma &\sim \mbox{Exponential}(1)
 \end{align}
-
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
-
+```
+We run the model in R using the rstanarm package [@rstanarm]. We use the default priors from rstanarm for $\beta_0$ and $\beta_1$, and an exponential distribution for $\sigma$ as it generally provides a good model for the variability in sales data, especially in cases with high uncertainty.
 
 ### Model justification
 
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
-
+We expect a negative relationship between the number of years since 1985 and the global sales of video games, hypothesizing that market saturation and the rise of alternative entertainment platforms may contribute to a gradual decline in sales. The choice of priors for \$\\beta_0\$ and \$\\beta_1\$ reflects our belief in the initial robustness of the market and a plausible decrease over time, respectively. This model allows us to quantify the influence of time on video game sales while accounting for natural fluctuations in annual market performance.
 
 # Results
-
-Our results are summarized in @tbl-modelresults.
 
 ```{r}
 #| echo: false
@@ -113,7 +67,6 @@ Our results are summarized in @tbl-modelresults.
 #| warning: false
 #| message: false
 
-library(rstanarm)
 
 first_model <-
   readRDS(file = here::here("models/first_model.rds"))
@@ -135,14 +88,11 @@ modelsummary::modelsummary(
 )
 ```
 
-
-
-
 # Discussion
 
 ## First discussion point {#sec-first-point}
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this.
 
 ## Second discussion point
 
@@ -156,8 +106,7 @@ Weaknesses and next steps should also be included.
 
 \appendix
 
-# Appendix {-}
-
+# Appendix {.unnumbered}
 
 # Additional data details
 
@@ -167,7 +116,7 @@ Weaknesses and next steps should also be included.
 
 In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
 
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
+In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows...
 
 ```{r}
 #| eval: true
@@ -211,11 +160,6 @@ plot(first_model, "trace")
 plot(first_model, "rhat")
 ```
 
-
-
 \newpage
 
-
 # References
-
-

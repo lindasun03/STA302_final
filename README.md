@@ -1,4 +1,4 @@
-# An analysis of Anxiety rate data
+# An analysis of Video game sales
 
 ## Overview
 
@@ -9,7 +9,8 @@ We examine data about Pokemon. We estimate an Bayesian hierarchical model which 
 
 The repo is structured as:
 
--   `data/raw_data` contains the raw data as obtained from the Pokemon wiki.
+-   `data/raw_data` contains the raw data for video game sale as obtained from 
+Kaggle (scraped from VGChartz and Metacritic)
 -   `data/analysis_data` contains the cleaned dataset that was constructed.
 -   `model` contains fitted models. 
 -   `other` contains relevant literature, details about LLM chat interactions, and sketches.
@@ -17,4 +18,4 @@ The repo is structured as:
 -   `scripts` contains the R scripts used to simulate, download and clean data.
 
 ## Statement on LLM usage
-The abstract and introduction were written with the help of ChatGPT and the entire chat history is available in inputs/llms/usage.txt.
+The abstract and introduction were written with the help of ChatGPT4 and the entire chat history is available in inputs/llms/usage.txt.

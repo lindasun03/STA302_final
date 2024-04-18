@@ -12,25 +12,22 @@
 library(tidyverse)
 library(rstanarm)
 
+
 #### Read data ####
-analysis_data <- read_csv("data/analysis_data/analysis_data.csv")
+analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
 
 ### Model data ####
-first_model <-
-  stan_glm(
-    formula = flying_time ~ length + width,
-    data = analysis_data,
-    family = gaussian(),
-    prior = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_intercept = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_aux = exponential(rate = 1, autoscale = TRUE),
-    seed = 853
-  )
+# Fitting the model
+model <- stan_glm(Global_Sales ~ Year_of_Release, data = analysis_data,
+                  family = gaussian(),
+                  prior = normal(50, 20), prior_intercept = normal(-0.3, 0.1),
+                  prior_aux = exponential(1, autoscale = FALSE),
+                  iter = 4000, warmup = 2000, chains = 4)
 
 
 #### Save model ####
 saveRDS(
-  first_model,
+  model,
   file = "models/first_model.rds"
 )
 
