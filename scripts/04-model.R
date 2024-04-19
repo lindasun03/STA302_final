@@ -1,8 +1,8 @@
 #### Preamble ####
-# Purpose: Models... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 11 February 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Models for video game sales analysis
+# Author: Yingxuan Sun
+# Date: today 
+# Contact: lindayx.sun@mail.utoronto.ca
 # License: MIT
 # Pre-requisites: [...UPDATE THIS...]
 # Any other information needed? [...UPDATE THIS...]
@@ -14,11 +14,11 @@ library(rstanarm)
 
 
 #### Read data ####
-analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
+yearly_sales <- read_parquet("data/analysis_data/yearly_sales_data.parquet")
 
 ### Model data ####
 # Fitting the model
-model <- stan_glm(Global_Sales ~ Year_of_Release, data = analysis_data,
+model <- stan_glm(Total_Global_Sales ~ Year_of_Release, data = yearly_sales,
                   family = gaussian(),
                   prior = normal(50, 20), prior_intercept = normal(-0.3, 0.1),
                   prior_aux = exponential(1, autoscale = FALSE),

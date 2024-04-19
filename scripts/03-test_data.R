@@ -14,7 +14,7 @@ library(arrow)
 data <- read_parquet("data/analysis_data/analysis_data.parquet")
 
 # 1. Check for N/A values in the data
-na_check <- any(is.na(data))
+na_check <- all(!is.na(data))
 
 # 2. Verify if Global_Sales is equal to the sum of sales from NA, EU, JP, and Other regions
 sales_check <- all(abs(data$Global_Sales - (data$NA_Sales + data$EU_Sales + data$JP_Sales + data$Other_Sales)) <= 0.1)

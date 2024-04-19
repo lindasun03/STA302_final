@@ -1,27 +1,32 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
+title: "Analyzing Trends in Video Game Sales"
 author: Yingxuan Sun
 thanks: "https://github.com/lindasun03/video_game_analysis."
 date: today
 date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
-format: pdf
+abstract: "This paper provides a comprehensive analysis of global video game sales, drawing from extensive data up to the year 2020. Utilizing a Bayesian statistical framework, we explore how various factors such as game genre, release platforms, and regional distributions influence sales performance. Our study highlights significant trends in the video game industry, revealing a shift towards a more globally distributed consumer base and the evolving impact of digital platforms."
+format:
+  pdf:
+    toc: true
+    number-sections: true
 number-sections: true
 bibliography: references.bib
 ---
 
 ```{r}
-#| include: false
-#| warning: false
-#| message: false
 
 library(tidyverse)
 library(rstanarm)
 library(arrow)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
 
-#### Read data ####  
-analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
+
+analysis_data <- read_parquet("../data/analysis_data/analysis_data.parquet")
+
+# Retrieve the linear model from the saved .rds file
+model <- readRDS("../models/first_model.rds")
 ```
 
 # Introduction
@@ -32,9 +37,19 @@ In this paper, we will explore the sales performance of video games based on mar
 
 By analyzing video game sales in detail, this paper hopes to provide valuable insights and information to game developers, market analysts, and readers interested in this industry, further contributing to the understanding and exploration of video game market dynamics.
 
-# Data {#sec-data}
+# Data
+
+## Data Source
 
 The data for this analysis was sourced from "Video Games Sales Dataset" [@videogamesales] on Kaggle platform. This dataset compiles extensive details on video game sales across various platforms and regions, capturing key metrics such as global sales, regional sales (North America, Europe, Japan, and other regions), as well as user and critic scores from Metacritic. It also includes information on publishers, platforms, and the genre of each game, spanning from the early 1980s to 2020. Additionally, the dataset offers insights into the release year of games, providing a comprehensive view of the evolution and trends in the video game industry over decades. This dataset is maintained by Kaggle user sidtwr and is updated periodically, ensuring its relevance and utility for both historical analysis and current market assessments. Due to its broad coverage and the granularity of sales and rating data, this dataset is considered highly credible and serves as the primary data source for our analysis of trends and patterns in video game sales and preferences. However, it should be noted that the analysis may be limited by the completeness and accuracy of user and critic scores, as these are aggregated from external sources and may vary in availability per game.
+
+## Feature
+
+Each entry in the Video Game Sales Dataset is meticulously categorized according to several key characteristics and recorded in a database that focuses only on data related to video game sales and excludes other media or entertainment metrics such as bundled sales or merchandising. Games are categorized according to the system on which they run, which includes major platforms such as Wii, PlayStation and Xbox, while lesser-used platforms are grouped in the "Other" category. The dataset categorizes games by the year they were released (from the early 1980s to 2020) and classifies them into genres such as sports, racing or role-playing. For publishing data, the dataset includes games from the top ten publishers, with all other games labeled "Other." Sales analyses were conducted for four major markets: North America, Europe, Japan, and Other. Due to a long history of incomplete data and issues with the coverage of game rating sites, game ratings and audience data are not fully comprehensive and were therefore excluded from the final analysis. This dataset is an important tool for analyzing the dynamics of the video game industry and provides insights into the sales trends of vedio game in different countries over time.
+
+## Methodology
+
+The data analysis was conducted using R, a versatile statistical programming language, employing a range of specialized packages. Data manipulation and preparation were streamlined using dplyr [@dplyr] from the tidyverse suite [@tidyverse], known for its data wrangling efficiency. Visualizations were deftly created with ggplot2 [@ggplot2], allowing for the crafting of informative and aesthetically pleasing graphics. For Bayesian statistical modeling, we turned to the rstanarm package [@rstanarm], which provided a user-friendly interface to the Stan modeling language. This package enabled us to apply a Bayesian framework to estimate the relationships within our data. To present our findings, we used the knitr package [@knitr] for integrating R code with our documentation, and kableExtra [@kableExtra] for producing enhanced and stylized tables.
 
 # Model
 
@@ -42,7 +57,7 @@ The goal of our modelling strategy is twofold. Firstly, we aim to analyze the hi
 
 ## Model set-up
 
-Define $y_i$ as the global sales of video games in millions of dollars for year $i$. Let $x_i$ represent the number of years since 1980, when our data collection begins.
+Define $y_i$ as the total global sales of video games in millions of dollars for year $i$. Let $x_i$ represent the number of years since 1980, when our data collection begins.
 
 ```{=tex}
 \begin{align} 
@@ -57,109 +72,150 @@ We run the model in R using the rstanarm package [@rstanarm]. We use the default
 
 ### Model justification
 
-We expect a negative relationship between the number of years since 1985 and the global sales of video games, hypothesizing that market saturation and the rise of alternative entertainment platforms may contribute to a gradual decline in sales. The choice of priors for \$\\beta_0\$ and \$\\beta_1\$ reflects our belief in the initial robustness of the market and a plausible decrease over time, respectively. This model allows us to quantify the influence of time on video game sales while accounting for natural fluctuations in annual market performance.
+We anticipate a negative trend between the progression of years since 1985 and the global video game sales, presuming that the evolution of market saturation and competition from new forms of entertainment may lead to a gentle downtrend in sales figures. The selected priors for $\beta_0$ and $\beta_1$ are indicative of our initial confidence in a strong market presence at the beginning of our study period and an expected gradual decrease in sales over time. This modeling approach is designed to quantify the impact of the passage of years on video game sales and to encapsulate the inherent yearly volatility in the market's performance.
 
 # Results
 
-```{r}
-#| echo: false
-#| eval: true
-#| warning: false
-#| message: false
-
-
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
-```
+## Result of the Model
 
 ```{r}
+#| label: coe
+#| tbl-cap: Summary Statistics
 #| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
 
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
+
+# Extract coefficients from the Bayesian model
+coefficients <- coef(model)
+
+# Convert coefficients to a data frame for better formatting
+coefficients_df <- data.frame(
+  Term = c("Intercept", "Slope"),
+  Estimate = unname(coefficients) 
 )
+ 
+# Round the estimates to three digits
+coefficients_df$Estimate <- round(coefficients_df$Estimate, 3)
+ 
+# Create a nicely formatted table
+
+coefficient_table <- kable(coefficients_df,
+                           col.names = c("Term", "Estimate"),
+                           align = 'c') %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE,
+                position = "center")
+
+# Print the summary table
+
+coefficient_table
+
+# Extract residuals from the model
+residuals <- resid(model)
+summary(residuals)
 ```
+
+The results of the Bayesian model indicate a statistically significant relationship between time (years since 1980) and global video game sales. Specifically, the model outputs suggest:
+
+Intercept ($\beta_0$): The estimated intercept is $-22292.742$. This figure represents the model's estimation of sales in the base year (1980), which, despite its ostensibly large negative value, must be understood within the context of the sales trend over time as modified by the slope parameter.
+
+Slope ($\beta_1$): The slope is estimated at $11.151$, indicating an average increase in global sales of approximately \$11.15 million per year since 1980. This positive value contradicts our initial hypothesis of a negative relationship, suggesting instead that, on average, video game sales have increased year over year throughout the dataset's time span. Summary Statistics: The provided summary statistics (minimum, 1st quartile, median, mean, 3rd quartile, maximum) relate to the residuals of the model -- the differences between the observed and predicted sales. These residuals are key in diagnosing the model fit and understanding the variability in sales not captured by the model.
+
+Model Fit: Without the context of the residuals' summary statistics, it's challenging to assess the fit quality of the model completely. However, the significance of the slope suggests the model captures a meaningful time trend in the data.
+
+### Graphing the Model
+
+```{r}
+
+# Predict and obtain the median and uncertainty intervals of the predictions
+posterior_pred <- posterior_predict(model, draws = 1000)
+median_pred <- apply(posterior_pred, 2, median)
+CI_lower <- apply(posterior_pred, 2, quantile, probs = 0.05)
+CI_upper <- apply(posterior_pred, 2, quantile, probs = 0.95)
+
+# Combine with the original data
+plot_data <- data.frame(
+  Year_of_Release = model$data$Year_of_Release,
+  Total_Global_Sales = model$data$Total_Global_Sales,
+  Median_Pred = median_pred,
+  CI_Lower = CI_lower,
+  CI_Upper = CI_upper
+)
+
+# Create the plot
+ggplot(plot_data, aes(x = Year_of_Release, y = Total_Global_Sales)) +
+  geom_ribbon(aes(ymin = CI_Lower, ymax = CI_Upper), fill = "blue", alpha = 0.2) + # Uncertainty band
+  geom_point() + # Observed data points
+  geom_line(aes(y = Median_Pred), color = "red") + # Median prediction line
+  labs(title = "Bayesian Linear Regression of Video Game Sales",
+       x = "Year of Release",
+       y = "Global Sales (Millions of Dollars)") +
+  theme_minimal()
+```
+
+## Regional Market Trends from Pre-2000 to 2001-2020
+
+```{r}
+
+# Split the data into two periods
+data_before_2000 <- analysis_data %>% filter(Year_of_Release < 2000)
+data_2001_2020 <- analysis_data %>% filter(Year_of_Release >= 2001 & Year_of_Release <= 2020)
+
+# Sum sales by region for each period
+sales_before_2000 <- data_before_2000 %>% summarise(
+  NA_Sales = sum(NA_Sales),
+  EU_Sales = sum(EU_Sales),
+  JP_Sales = sum(JP_Sales),
+  Other_Sales = sum(Other_Sales)
+)
+
+sales_2001_2020 <- data_2001_2020 %>% summarise(
+  NA_Sales = sum(NA_Sales),
+  EU_Sales = sum(EU_Sales),
+  JP_Sales = sum(JP_Sales),
+  Other_Sales = sum(Other_Sales)
+)
+
+# Convert to proportion
+sales_before_2000 <- as.data.frame(t(sales_before_2000))
+sales_2001_2020 <- as.data.frame(t(sales_2001_2020))
+colnames(sales_before_2000) <- "Sales"
+colnames(sales_2001_2020) <- "Sales"
+sales_before_2000$Region <- rownames(sales_before_2000)
+sales_2001_2020$Region <- rownames(sales_2001_2020)
+
+# Plot the pie charts
+par(mfrow=c(1,2))
+pie(sales_before_2000$Sales, labels = sales_before_2000$Region, main = "Sales Distribution Before 2000")
+pie(sales_2001_2020$Sales, labels = sales_2001_2020$Region, main = "Sales Distribution 2001-2020")
+
+```
+
+The comparative pie chart depicts the changing landscape of global video game sales, presenting a stark contrast between the structure of the market before 2000 and the two decades that followed. In the early years, North American sales dominated the industry, perhaps thanks to its robust technology, always-leading economic power, and mature gaming commercialization chain, and this has continued into the new millennium. This continuity underscores the enduring appeal and growth of gaming in the region.
+
+Japan's market share was significantly more prominent until 2000, but declined in subsequent years. This shift can be attributed to the prolonged economic stagnation that followed the bursting of the "bubble economy," which dampened consumer spending levels. The impact of demographic changes due to Japan's aging population and the trend toward fewer children is also evident. These socio-economic factors are critical to understanding the decline in game sales as the population of a major market for video games declines.
+
+The significant growth in the "Other" category from 2001 to 2020 is indicative of the growing influence of Third World economies such as China on the global stage. Rapid economic development, technological advances and increasing consumer purchasing power in these countries have expanded the entertainment and leisure industry. With the rise of a tech-savvy middle class in these regions and further integration with the digital world, their contribution to global video game sales is becoming more pronounced.
+
+The expansion of Europe's share in the 2001-2020 chart demonstrates the maturation of gaming culture and the successful penetration of the market by gaming companies. Diversification of gaming platforms, coupled with tailored marketing strategies and content localization, has made gaming one of the dominant pastimes throughout Europe.
+
+In summary, while North America's leadership in the video game market remains solid, the industry has shifted to a more globally distributed consumer base. Europe's growing market share, changes in the Japanese market due to economic and demographic factors, and the notable rise of gaming in developing countries mark a new era of opportunity and challenge for game developers and publishers. These trends emphasize the need for a nuanced understanding of regional preferences and market conditions in order to strategize for future engagement and growth in the global gaming ecosystem.
 
 # Discussion
 
-## First discussion point {#sec-first-point}
+## Summery of Findings
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this.
+Our findings utilize a Bayesian linear regression model to show how the global video game market will change from 1980 to 2020. Contrary to our initial hypothesis that market saturation and increased competition would lead to declining sales, the model shows a positive trend, with annual sales projected to grow by approximately \$11.15 million. This growth highlights the expanding appeal of video games in different regions. Our regional analysis further reveals significant changes: North America maintains a strong market position, Europe is growing strongly, and emerging markets, particularly third world countries, are rapidly gaining market share. However, Japan's share has declined, likely due to economic stagnation and demographic changes.
 
-## Second discussion point
+## Weaknesses
 
-## Third discussion point
+The main limitation of this study stems from the limitations of the data used. While the dataset is extensive, there are significant gaps, particularly in the game ratings data. Game ratings are an important indicator of consumer satisfaction and game quality, and are critical to understanding the sales drivers of the video game industry. However, in our dataset, this information is not only incomplete, but severely lacking, which poses a significant challenge. Many entries do not have user or critic ratings, a deficiency that prevents our analysis from including these potential predictor variables. The lack of data affects our understanding of the relationship between game quality and market performance. For example, games with higher ratings may generate more sales or foster higher customer loyalty, and our current model is unable to capture these nuances due to the lack of data.
 
-## Weaknesses and next steps
+In addition, our research methodology does not take into account the impact of changing sales channels on the gaming industry landscape. Especially, digital downloads and in-game purchases have become major revenue sources, reflecting a shift in consumer behavior toward online platforms. The rise of digital marketplaces has allowed consumers to purchase games anytime, anywhere, and this convenience has greatly increased sales potential. Similarly, in-game purchases, game peripheral peddling, bundled DLC packs, and in-game implanted advertisements have opened up new revenue channels not captured by traditional sales metrics. These channels account for a significant portion of industry profits but are not reflected in our analysis, which has historically focused on more traditional sales figures.
 
-Weaknesses and next steps should also be included.
+## Future Study
 
-\newpage
-
-\appendix
-
-# Appendix {.unnumbered}
-
-# Additional data details
-
-# Model details {#sec-model-details}
-
-## Posterior predictive check
-
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows...
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
-
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
-```
-
-## Diagnostics
-
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
-
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
-
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
-
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
-```
+As the video game industry continues to grow at a rapid pace, future research should endeavor to adopt a more robust methodology, especially by delving into the booming video game markets in third world countries and obtaining comprehensive data on retail and digital sales channels. Strengthening collaboration with regional gaming platforms and major digital storefronts to obtain accurate sales data, including in-game purchases, would assist in this endeavor. Additionally, incorporating demographic factors, such as gender differences in gaming habits and preferences, through large-scale consumer surveys and analytics tools will provide a more nuanced understanding of a diverse consumer base. Longitudinal studies that track player engagement over time can also provide valuable insights into how consumer behavior changes in response to technological advances, economic changes, and life stages. In order to effectively manage and analyze the vast amounts of data generated by these studies, it is critical to integrate advanced analytics techniques such as machine learning and predictive analytics. These methods can refine data analysis, improve sales forecasts, and uncover subtle market trends, thereby providing stakeholders with strategic insights that are essential for navigating the complex dynamics of the global gaming market. By broadening the research framework in these ways, future studies can provide a richer and more accurate picture of the video game industry, fill existing knowledge gaps, and provide industry leaders with the necessary information to succeed in an increasingly competitive environment.
 
 \newpage
 
-# References
+# Bibliography

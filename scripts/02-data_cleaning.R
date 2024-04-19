@@ -2,16 +2,16 @@
 # Purpose: Cleans the raw data downloaded from Kaggle
 # Author: Yingxuan Sun
 # Date: today 
-# Contact: lindayx.sunr@mail.utoronto.ca
+# Contact: lindayx.sun@mail.utoronto.ca
 # License: MIT
 
 #### Workspace setup ####
 library(dplyr)
 library(arrow)
-library(tidyverse)
+
 
 #### Clean data ####
-data <- read.csv("data/raw_data/raw_data.csv")
+data <- read.csv("data/raw_data/raw_data.csv",na = c("", "NA", "N/A", "na"))
 
 # Remove columns whose data is not used in this analysis
 data <- data[,(2:10)]
@@ -35,7 +35,14 @@ data <- data %>%
 #### Save data ####
 write_parquet(data, "data/analysis_data/analysis_data.parquet")
 
-write_csv(data, "data/analysis_data/analysis_data.csv")
+# Group by year and calculate the sum of global sales for each year
+yearly_sales <- data %>%
+  group_by(Year_of_Release) %>%
+  summarise(Total_Global_Sales = sum(Global_Sales, na.rm = TRUE))
+
+write_parquet(yearly_sales, "data/analysis_data/yearly_sales_data.parquet")
+
+
 
 
 
